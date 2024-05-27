@@ -40,6 +40,21 @@ export const GetVandorProfile = async (req: Request, res:Response, next: NextFun
     }
     return res.json({"message": "Vandor information not found"})
 }
+export const UpdateVandorCoverImage = async (req: Request, res:Response, next: NextFunction) =>{
+    const user = req.user;
+    if(user){
+        const vandor = await FindVandor(user._id)
+        if(vandor !== null){
+
+            const files = req.files as [Express.Multer.File]
+            const images  = files.map((file: Express.Multer.File) => file.filename);
+            vandor.coverImages.push(...images);
+            const result = await vandor.save();
+            return res.json(result);
+        }
+    }
+    return res.json({"message": "Vandor information not found"})
+}
 export const UpdateVandorProfile = async (req: Request, res:Response, next: NextFunction) =>{
     const {foodTypes, name, address, phone} = <EditVandorInputs>req.body;
     const user = req.user;
@@ -76,7 +91,9 @@ export const AddFood = async (req: Request, res:Response, next: NextFunction) =>
         const {name, description, category, foodType, readyTime, price } = <CreateFoodInputs>req.body;
         const vandor = await FindVandor(user._id)
         if(vandor !== null){
-            // const vandorId = await vandor._id as unknown as string;
+
+            const files = req.files as [Express.Multer.File]
+            const images  = files.map((file: Express.Multer.File) => file.filename);
             const createdFood = await Food.create({
                 vandorId: vandor._id,
                 name: name,
@@ -86,7 +103,8 @@ export const AddFood = async (req: Request, res:Response, next: NextFunction) =>
                 rating: 0,
                 readyTime: readyTime,
                 foodType: foodType,
-                images: ['mock.jpg']
+                images: images,
+                foods: []
             })
             vandor.foods.push(createdFood);
             const result = await vandor.save();
@@ -98,7 +116,10 @@ export const AddFood = async (req: Request, res:Response, next: NextFunction) =>
 export const GetFoods = async (req: Request, res:Response, next: NextFunction) =>{
     const user = req.user;
     if(user){
-        
+        const foods = await  Food.find({vandorId: user._id})
+        if(foods !== null){
+            return res.json(foods)
+        }
     }
     return res.json({"message": "Vandor information not found"})
 }
